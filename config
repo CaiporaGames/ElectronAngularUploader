@@ -1,0 +1,92 @@
+
+
+//////////////////ANGULAR 5
+
+
+import { IpcRenderer } from 'electron';
+
+
+  private ipc: IpcRenderer | undefined;
+
+
+
+  constructor(
+ 
+  ) {
+    if ((<any>window).require) {
+      try {
+        this.ipc = (<any>window).require('electron').ipcRenderer;
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    } else {
+      console.warn('App not running inside Electron!');
+    }
+  }
+
+ 
+
+  handleFileInput(event) {
+    //event.path
+
+    for(let i = 0; i < event.target.files.length; i++)
+    {
+      this.ipc!.send("uploads", event.target.files[i]?.path);
+    }
+  }
+
+
+
+//////////////////ELECTRON 5 (app.js)
+
+const {app, BrowserWindow, ipcMain} = require('electron')
+
+    const url = require("url");
+    const path = require("path");
+    var fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
+
+
+
+
+    ipcMain.on('uploadCharacter', (event, paths) => {
+
+      let name = path.parse(paths[1]).name
+
+      /* event.sender.send('showDialog', ["title", "123", "error"]); */
+      saveAtlas(name, paths)
+    })
+    
+    
+    function createWindow() {
+  win = new BrowserWindow({
+    width: 1240,
+    height: 800,
+    backgroundColor: "#ffffff",
+
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false,
+    },
+  });
+  win.maximize();
+  win.loadURL(`file://${__dirname}/dist/index.html`);
+  win.on("closed", function () {
+    win = null;
+  });
+}
+
+
+
+
+function saveUploads(name, paths)
+{
+  let extension = path.extname(paths)
+  let writePath = app.getAppPath() + "\\src\\assets\\voices\\" + name + `${extension}`
+
+  fs.createReadStream(paths).pipe(fs.createWriteStream(writePath)).on('close', () => {
+    console.log("Upload Successfull!")
+  });
+
+}
